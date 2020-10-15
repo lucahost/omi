@@ -96,12 +96,13 @@ echo "Copying '{1}/lib/libmi.{2}' -> 'PSWSMan/lib/{0}/'"
 cp '{1}/lib/libmi.{2}' '../PSWSMan/lib/{0}/\''''.format(distribution, output_dirname, library_extension)))
 
     script_steps.append(('Cloning upstream psl-omi-provider repo',
-        '''if [ -d "{0}" ]; then
+        '''cd ../psl-omi-provider
+if [ -d repo ]; then
     echo "Clearing existing psl-omi-provider repo"
-    rm -rf "{0}"
+    rm -rf repo
 fi
-git clone https://github.com/PowerShell/psl-omi-provider.git "{0}"
-cd "{0}"'''.format('/tmp/psl-omi-provider')))
+git clone https://github.com/PowerShell/psl-omi-provider.git repo
+cd repo'''))
 
     # Get a list of patches to apply to psl-omi-provider and sort them by the leading digit in the filename.
     psl_patches = [p for p in os.listdir(os.path.join(OMI_REPO, 'psl-omi-provider'))

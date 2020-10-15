@@ -33,3 +33,4 @@ __pycache__/
 /integration_environment/cert_setup
 /integration_environment/exchange*
 /PSWSMan/lib/*
+/psl-omi-provider/repo
