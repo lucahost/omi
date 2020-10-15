@@ -165,7 +165,7 @@ install_name_tool -change \\
                         env_vars[key] = value
 
                 docker_run(distro_details['container_image'], '/omi/%s' % os.path.basename(temp_fd.name),
-                    cwd='/omi', env=env_vars)
+                    cwd='/omi', env=env_vars, shell=distro_details['shell'])
 
             else:
                 print("Running build locally")
