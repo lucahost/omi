@@ -49,14 +49,17 @@ def main():
 
         elif distribution == 'debian9':
             debian_ms = 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
-            script_steps.append(('Further steps for MS repo on Debian 8', debian_ms))
+            script_steps.append(('Further steps for MS repo on Debian 9', debian_ms))
 
         script_steps.append(('Installing test dependency packages', dep_script))
 
-        cert_extension = distro_details['cert_extension'] if distro_details['cert_extension'] else 'pem'
-        ca_trust_script = '''cp integration_environment/cert_setup/ca.pem '%s/ca.%s'
-%s''' % (distro_details['cert_staging_dir'], cert_extension, distro_details['cert_staging_cmd'])
-        script_steps.append(('Adding CA chain to system trust store', ca_trust_script))
+        # On macOS we aren't running as root in a container so this step needs sudo.
+        sudo_prefix = 'sudo ' if distribution == 'macOS' else ''
+        cert_path = os.path.join('integration_environment', 'cert_setup', 'ca.pem')
+        if os.path.exists(os.path.join(OMI_REPO, cert_path)):
+            cert_cmd = "%spwsh -Command 'Import-Module ./PSWSMan; Register-TrustedCertificate -Path %s -Verbose'" \
+                % (sudo_prefix, cert_path)
+            script_steps.append(('Adding CA chain to system trust store', cert_cmd))
 
         pwsh_deps = '''cat > /tmp/pwsh-requirements.ps1 << EOL
 \$ErrorActionPreference = 'Stop'
@@ -69,12 +72,9 @@ EOL
 pwsh -NoProfile -NoLogo -File /tmp/pwsh-requirements.ps1'''
         script_steps.append(('Installing Pester 5+ and other PowerShell deps', pwsh_deps))
 
-
-    # On macOS we aren't running as root in a container so this step needs sudo.
-    sudo_prefix = 'sudo ' if distribution == 'macOS' else ''
-    copy_script = '''PWSHDIR="$( dirname "$( readlink "$( which pwsh )" )" )"
-%s/bin/cp Unix/build-%s/lib/libmi.* "${PWSHDIR}/"''' % (sudo_prefix, distribution)
-    script_steps.append(('Copying libmi.so to the PowerShell directory', copy_script))
+    install_script = '''PWSHDIR="$( dirname "$( readlink "$( which pwsh )" )" )"
+%spwsh -Command 'Import-Module ./PSWSMan; Install-WSMan -Verbose\'''' % sudo_prefix
+    script_steps.append(('Copying lib artifacts to the PowerShell directory', install_script))
 
     pester_script = '''cat > /tmp/pwsh-test.ps1 << EOL
 \$ErrorActionPreference = 'Stop'
@@ -92,15 +92,42 @@ echo "%s" > /tmp/distro.txt''' % distribution
     script_steps.append(('Creating Pester test script', pester_script))
 
     script_steps.append(('Getting PowerShell version', 'pwsh -Command \$PSVersionTable'))
+    script_steps.append(('Getting libmi version',
+        "pwsh -Command 'Import-Module ./PSWSMan; Get-WSManVersion'"))
 
     if distribution == 'macOS':
+        script_steps.append(('Output libpsrpclient libraries', 'otool -L "${PWSHDIR}/libpsrpclient.dylib"'))
         script_steps.append(('Output libmi libraries', 'otool -L "${PWSHDIR}/libmi.dylib"'))
 
     else:
+        script_steps.append(('Output libpsrpclient libraries', 'ldd "${PWSHDIR}/libpsrpclient.so"'))
         script_steps.append(('Output libmi libraries', 'ldd "${PWSHDIR}/libmi.so"'))
 
     if args.interactive:
         script_steps.append(('Opening interactive shell', '/bin/bash'))
+
+    elif args.verify_version:
+        script_steps.append(('Verify libraries are loaded and match %s' % args.verify_version,
+        '''cat > /tmp/version-test.ps1 << EOL
+\$ErrorActionPreference = 'Stop'
+\$ProgressPreference = 'SilentlyContinue'
+Import-Module -Name ./PSWSMan
+
+\$expectedVersion = [Version]'%s'
+\$actualVersions = Get-WSManVersion
+
+if (\$actualVersions.MI -ne \$expectedVersion) {
+    throw "libmi version '\$(\$actualVersions.MI)' does not match expected version '\$expectedVersion'"
+}
+
+if (\$actualVersions.PSRP -ne \$expectedVersion) {
+    throw "libpsrpclient version '\$(\$actualVersions.PSRP)' does not match expected version '\$expectedVersion'"
+}
+
+"SUCCESS: Versions are good"
+EOL
+
+pwsh -NoProfile -NoLogo -File /tmp/version-test.ps1''' % args.verify_version))
 
     else:
         script_steps.append(('Running PowerShell test', 'pwsh -NoProfile -NoLogo -File /tmp/pwsh-test.ps1'))
@@ -143,6 +170,11 @@ def parse_args():
                         dest='skip_deps',
                         action='store_true',
                         help='Skip installing any dependencies.')
+
+    parser.add_argument('--verify-version',
+                        dest='verify_version',
+                        action='store',
+                        help='Will only test that the library can be loaded and the version matches this value.')
 
     run_group = parser.add_mutually_exclusive_group()
     run_group.add_argument('--docker',

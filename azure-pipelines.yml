@@ -44,24 +44,18 @@ stages:
       displayName: Build
 
     - pwsh: |
-        $version = tools/Get-OmiVersion -Path Unix/build-$(distribution)/lib/libmi.so
+        $version = (Import-Module -Name ./PSWSMan -PassThru).Version.ToString(3) + ".$(Build.BuildId)"
+        Write-Host "##vso[task.setvariable variable=BuildVersion]${version}"
+      displayName: Get module version
 
-        # Get the actual version from the release tag (v{major}.{minor}.{build}-pwsh)
-        $expectedTag = ./release.py --print-tag
-        $expectedVersion = [Version]($expectedTag.Substring(1, $expectedTag.Length - 6) + ".$(Build.BuildId)")
-
-        if ($version -ne $expectedVersion) {
-            throw "Actual version ($version) != expected version ($expectedVersion)"
-        }
-      errorActionPreference: Stop
-      displayName: Make sure the output library can be loaded in PowerShell and returns the version.
-      # Bug on Centos7 causes a failure, need to investigate more later
-      condition: and(succeeded(), ne(variables['distribution'], 'centos7'))
+    - script: ./test.py $(distribution) --docker --verify-version $(BuildVersion)
+      displayName: Check compiled libraries are loadable and are set to the correct version
 
     - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: Unix/build-$(distribution)/lib/libmi.so
-        artifactName: $(distribution)-libmi
+        targetPath: PSWSMan/lib/$(distribution)/
+        artifactName: $(distribution)
+      displayName: Publish artifacts
 
   - job: macOS
     pool:
@@ -74,22 +68,18 @@ stages:
       displayName: Build
 
     - pwsh: |
-        $version = tools/Get-OmiVersion -Path Unix/build-macOS/lib/libmi.dylib
+        $version = (Import-Module -Name ./PSWSMan -PassThru).Version.ToString(3) + ".$(Build.BuildId)"
+        Write-Host "##vso[task.setvariable variable=BuildVersion]${version}"
+      displayName: Get module version
 
-        # Get the actual version from the release tag (v{major}.{minor}.{build}-pwsh)
-        $expectedTag = ./release.py --print-tag
-        $expectedVersion = [Version]($expectedTag.Substring(1, $expectedTag.Length - 6) + ".$(Build.BuildId)")
-
-        if ($version -ne $expectedVersion) {
-            throw "Actual version ($version) != expected version ($expectedVersion)"
-        }
-      errorActionPreference: Stop
-      displayName: Make sure the output library can be loaded in PowerShell and returns the version.
+    - script: ./test.py macOS --verify-version $(BuildVersion)
+      displayName: Check compiled libraries are loadable and are set to the correct version
 
     - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: Unix/build-macOS/lib/libmi.dylib
-        artifactName: macOS-libmi
+        targetPath: PSWSMan/lib/macOS/
+        artifactName: macOS
+      displayName: Publish artifacts
 
 - stage: Publish
   jobs:
@@ -107,10 +97,47 @@ stages:
     - task: DownloadPipelineArtifact@2
       inputs:
         source: current
-        path: $(Build.ArtifactStagingDirectory)
+        path: PSWSMan/lib
 
-    - script: ./release.py --pipeline-artifacts "$(Build.ArtifactStagingDirectory)"
-      displayName: Rename the published artifacts for the GitHub release assets
+    - script: sed -i '/Prerelease =/d' PSWSMan/PSWSMan.psd1
+      displayName: Remove prerelease data in psd1 manifest for final release
+      condition: >-
+        and(
+          succeeded(),
+          eq(variables['Build.Reason'], 'IndividualCI'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+          startsWith(variables['Build.SourceVersionMessage'], 'release ')
+        )
+
+    - script: ./release.py --output-dir "$(Build.ArtifactStagingDirectory)"
+      displayName: Create artifacts to publish for GitHub and PowerShell Gallery
+
+    - script: |
+        NUPKG_PATH="$( ls $(Build.ArtifactStagingDirectory)/PSWSMan*.nupkg )"
+        echo "Found PSWSman nupkg at '${NUPKG_PATH}'"
+        echo "##vso[task.setvariable variable=NupkgPath]${NUPKG_PATH}"
+      displayName: Get full path to published nupkg
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: $(NupkgPath)
+        artifactName: PSWSMan
+      displayName: Publish PSWSMan nupkg
+
+    - task: NuGetCommand@2
+      inputs:
+        command: push
+        packagesToPush: $(Build.ArtifactStagingDirectory)/*.nupkg
+        nuGetFeedType: external
+        publishFeedCredentials: PowerShell Gallery
+      displayName: Publish PSWSMan to PSGallery
+      condition: >-
+        and(
+          succeeded(),
+          eq(variables['Build.Reason'], 'IndividualCI'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+          startsWith(variables['Build.SourceVersionMessage'], 'release ')
+        )
 
     - task: GitHubRelease@0
       inputs:

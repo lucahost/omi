@@ -3,9 +3,17 @@
 This is the changelog for this fork of OMI.
 It documents the changes in each of the tagged releases
 
-## 1.3.0 - TBD
+## 2.0.0 - TBD
 
-+ Placeholder
+### Breaking Changes
+
++ GitHub release artifacts are now a `.tar.gz` for each distribution containing `libmi` and `libpsrp`
++ Removed the script `tools/Get-OmiVersion.ps1` in favour of `Get-WSManVersion` that is included in the new `PSWSMan` module
+
+### Changes
+
++ Created `PSWSMan` which is a PowerShell module uploaded to the PowerShell Gallery that can install and manage the OMI libraries for you
++ Build `libpsrpclient` as well and add it to the release artifacts
 
 ## 1.2.1 - 2020-09-26
 
