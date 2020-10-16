@@ -3,7 +3,7 @@
 This is the changelog for this fork of OMI.
 It documents the changes in each of the tagged releases
 
-## 2.0.0 - TBD
+## 2.0.0 - 2020-10-17
 
 ### Breaking Changes
 
