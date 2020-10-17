@@ -1,6 +1,7 @@
 # Open Management Infrastructure - PowerShell Edition
 
 [![Build Status](https://dev.azure.com/jborean93/jborean93/_apis/build/status/jborean93.omi?branchName=main)](https://dev.azure.com/jborean93/jborean93/_build/latest?definitionId=6&branchName=main)
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/dt/PSWSMan.svg)](https://www.powershellgallery.com/packages/PSWSMan)
 
 This is a fork of Microsoft [OMI](https://github.com/microsoft/omi) repository.
 Read more about this fork in my blog post [Wacky WSMan on Linux](https://www.bloggingforlogging.com/2020/08/21/wacky-wsman-on-linux/).
