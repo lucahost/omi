@@ -7,6 +7,8 @@ It documents the changes in each of the tagged releases
 
 + Added `fedora33` distribution
 + Make a backup of the original library files in the PowerShell dir before installing the forked copies
++ Merge in upstream changes to stay in sync
+  + Upstream changes were based on server side configuration updates and logging and not something that affects PowerShell's WSMan client code
 
 ## 2.0.0 - 2020-10-17
 
