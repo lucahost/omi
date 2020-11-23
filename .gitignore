@@ -32,5 +32,6 @@ __pycache__/
 /integration_environment/.vagrant
 /integration_environment/cert_setup
 /integration_environment/exchange*
+/integration_environment/test_results.md
 /PSWSMan/lib/*
 /psl-omi-provider/repo

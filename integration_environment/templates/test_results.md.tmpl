@@ -1,0 +1,41 @@
+# Integration Test Results
+
+## Summary
+
+| Distribution | Status |
+|-|-|
+{% for result in test_result.results %}
+|{{ result.item.item }}|{{ result.failed | ternary("**Fail**", "Pass") }}|
+{% endfor %}
+
+## Failed
+{% for result in test_result.results | selectattr("failed", "eq", True) %}
+
+### Distribution - {{ result.item.item }}
+
+```
+RC: {{ result.rc }}
+
+STDOUT:
+{{ result.stdout }}
+
+STDERR:
+{{ result.stderr}}
+```
+
+{% endfor %}
+## Succeeded
+{% for result in test_result.results | selectattr("failed", "eq", False) %}
+
+### Distribution - {{ result.item.item }}
+
+```
+RC: {{ result.rc }}
+
+STDOUT:
+{{ result.stdout }}
+
+STDERR:
+{{ result.stderr}}
+```
+{% endfor %}

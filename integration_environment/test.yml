@@ -53,7 +53,19 @@
     async_status:
       jid: '{{ item.ansible_job_id }}'
     loop: '{{ async_job.results }}'
-    register: job_result
-    until: job_result is finished
+    register: test_result
+    ignore_errors: yes
+    until: test_result is finished
     delay: 5
     retries: 120
+
+  - name: output test results
+    template:
+      src: test_results.md.tmpl
+      dest: test_results.md
+    delegate_to: localhost
+
+  - name: failure if a distribution test has failed
+    fail:
+      msg: Tests have failed, check test_results.md for more details
+    when: (test_result.results | selectattr("failed", "eq", True) | count) > 0

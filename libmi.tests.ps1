@@ -133,7 +133,8 @@ Describe "PSWSMan tests" {
         $ev[0].Exception.Message | Should -BeLike "Unsupported distribution 'invalid'. Supported distributions: *"
     }
 
-    It "Created backups of <Name> after installation" -TestCases @(
+    # Alpine3 doesn't come with a copy of libmi or libpsrpclient so this test will fail when running there.
+    It "Created backups of <Name> after installation" -Skip:($Global:Distribution -in @('alpine3')) -TestCases @(
         @{ Name = 'libmi' },
         @{ Name = 'libpsrpclient' }
     ) {
@@ -278,15 +279,15 @@ Describe "PSRemoting over HTTPS" {
         [PSWSMan.Native]::unsetenv('SSL_CERT_FILE')
     }
 
-    # ChannelBindingToken doesn't work on SPNEGO with MIT krb5 until after 1.18.2. Fedora 32 seems to have backported
-    # further changes into the package which reports 1.18.2 but in reality has the fix so we also check that.
+    # ChannelBindingToken doesn't work on SPNEGO with MIT krb5 until after 1.19. Fedora seems to have backported
+    # further changes into the package which reports the older versions in reality has the fix so we also check that.
     # macOS uses Heimdal which isn't affected by that bug.
-    It "Connects over HTTPS - Negotiate" -Skip:($Global:Distribution -notin @('fedora32', 'macOS') -and $Global:KrbVersion -lt [Version]'1.18.3') {
+    It "Connects over HTTPS - Negotiate" -Skip:($Global:Distribution -notin @('fedora32', 'fedora33', 'macOS') -and $Global:KrbVersion -lt [Version]'1.19') {
         $actual = Invoke-Command @CommonInvokeParams -Port $GoodCertPort
         $actual | Should -Be $Global:TestHostInfo.NetbiosName
     }
 
-    It "Connects over HTTPS with NTLM auth" -Skip:($Global:Distribution -notin @('fedora32') -and $Global:KrbVersion -lt [Version]'1.18.3') {
+    It "Connects over HTTPS with NTLM auth" -Skip:($Global:Distribution -notin @('fedora32') -and $Global:KrbVersion -lt [Version]'1.19') {
         # Using an IP address means we break Kerberos auth and fallback to NTLM
         $invokeParams = $CommonInvokeParams.Clone()
         $invokeParams.ComputerName = $Global:TestHostInfo.HostnameIP
@@ -312,8 +313,9 @@ Describe "PSRemoting over HTTPS" {
         @{ Name = $_.Name; Port = $_.Port }  # TestCases takes a Hashtable not a PSCustomObject
     }
     It "ChannelBindingToken works with certficate - <Name>" -TestCases $cbtInfo {
-        # Debian 10 seems to fail to verify certs signed with SHA-1, just skip in that case
-        if ('debian10' -eq $Global:Distribution -and $Name -eq 'cbt-sha1') {
+        # Some newer OpenSSL versions fail to verify certs signed with SHA-1, just skip in that case
+        $skipSHA1 = @('debian10', 'fedora33', 'ubuntu20.04')
+        if ($Global:Distribution -in $skipSHA1 -and $Name -eq 'cbt-sha1') {
             return
         }
         $actual = Invoke-Command @CommonInvokeParams -Port $Port -Authentication Kerberos
