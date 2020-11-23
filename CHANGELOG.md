@@ -3,9 +3,11 @@
 This is the changelog for this fork of OMI.
 It documents the changes in each of the tagged releases
 
-## 2.0.1 - TBD
+## 2.1.0 - 2020-11-24
 
-+ Added `fedora33` distribution
++ Added the following distributions
+  + `fedora33`
+  + `ubuntu20.04`
 + Make a backup of the original library files in the PowerShell dir before installing the forked copies
 + Merge in upstream changes to stay in sync
   + Upstream changes were based on server side configuration updates and logging and not something that affects PowerShell's WSMan client code
