@@ -808,10 +808,6 @@ if [ "$arg1" = "cflags" -o "$arg1" = "cxxflags" ]; then
             r="$r -fcommon"
             r="$r -fno-strict-aliasing"
             r="$r -fstack-protector-all"
-            # JBOREAN CHANGE:
-            # Newer gcc versions set '-fno-common' which breaks the OMI build. We proactively set '-fcommon' to
-            # restore the older behaviour.
-            r="$r -fcommon"
             r="$r -D_GNU_SOURCE"
             r="$r -D_XOPEN_SOURCE=600"
             r="$r -DGSS_USE_IOV=1"
