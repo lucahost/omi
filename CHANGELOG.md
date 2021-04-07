@@ -3,7 +3,7 @@
 This is the changelog for this fork of OMI.
 It documents the changes in each of the tagged releases
 
-## 2.2.0 - TBD
+## 2.2.0 - 2021-04-07
 
 + Created universal builds to be used across the various nix distributions
   + `glibc` is based on CentOS 7 and is designed for most GNU/Linux distributions, EL/Debian/Arch/etc
