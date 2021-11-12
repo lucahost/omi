@@ -9,18 +9,11 @@ namespace PSWSMan
 
         public void OnImport()
         {
-        /*
-        $libPath = Join-Path $PSScriptRoot lib glibc-1.1 libpsrpclient.so
-        $pwshDir = Split-Path -Path ([PSObject].Assembly.Location) -Parent
-        $libPresent = Test-Path -LiteralPath (Join-Path $pwshDir libpsrpclient.so)
-        */
-
-            //Console.WriteLine("PSWSMan OnImport");
+            // TODO: Add auto resolver for libpsrpclient
         }
 
         public void OnRemove(PSModuleInfo module)
         {
-            //Console.WriteLine("PSWSMan OnRemove");
             resolver?.Dispose();
         }
     }
