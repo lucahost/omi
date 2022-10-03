@@ -5,8 +5,8 @@
 <!--- Explain the problem below -->
 
 
-##### LIBMI VERSION
-<!--- Run https://github.com/jborean93/omi/.github/tools/Get-OmiVersion.ps1 and paste output here -->
+##### MODULE VERSION
+<!--- Run 'Import-Module -Name PSWSMan -PassThru and paste output here -->
 ```paste below
 
 ```
