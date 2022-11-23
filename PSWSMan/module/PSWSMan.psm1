@@ -34,7 +34,7 @@ class X509CertificateChainAttribute : ArgumentTransformationAttribute {
 Function pswsman_exec {
     <#
     .SYNOPSIS
-    Wraps a native pswsman_exec call and output as separate streams for manual handling
+    Wraps a native exec call and output as separate streams for manual handling
     #>
     [CmdletBinding()]
     param (
